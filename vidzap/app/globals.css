@@ -3,6 +3,10 @@
 :root {
   --background: #08080f;
   --foreground: #f0f0f5;
+  --color-text-tertiary: #44444f;
+  --color-text-secondary: #7a7a90;
+  --color-surface: rgba(255,255,255,0.03);
+  --color-border: rgba(255,255,255,0.07);
 }
 
 body {
@@ -65,4 +69,12 @@ body {
 }
 .progress-animate {
   animation: progress-bar 14s ease forwards;
+}
+
+@keyframes liveDot {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+.live-dot {
+  animation: liveDot 2s ease-in-out infinite;
 }

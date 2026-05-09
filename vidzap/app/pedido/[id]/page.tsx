@@ -123,7 +123,7 @@ export default function PedidoPage() {
         </Link>
         <div className="flex items-center gap-2">
           <span className="text-xl">⚡</span>
-          <span className="text-lg font-bold text-white">VidZap</span>
+          <span className="text-lg font-bold text-white">Mandaí</span>
         </div>
         <div className="ml-auto text-xs font-mono" style={{ color: "#444455" }}>
           #{order.id}
@@ -231,7 +231,7 @@ export default function PedidoPage() {
             {order.videoUrl && (
               <a
                 href={order.videoUrl}
-                download={`vidzap-${order.recipientName}-${order.id}.mp4`}
+                download={`mandai-${order.recipientName}-${order.id}.mp4`}
                 className="flex items-center justify-center gap-2 py-3.5 rounded-2xl font-semibold text-sm transition-all"
                 style={{
                   background: "rgba(255,255,255,0.06)",

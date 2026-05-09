@@ -1,5 +1,7 @@
 import Link from "next/link";
 import { SCENE_CHIPS, formatCents, PRICES } from "@/lib/data";
+import StatsCounter from "@/components/StatsCounter";
+import FaqAccordion from "@/components/FaqAccordion";
 
 const HOW_IT_WORKS = [
   {
@@ -42,12 +44,18 @@ const EXAMPLES = [
   },
 ];
 
+const EXAMPLE_VIDEOS: { tag: string; src: string }[] = [
+  { tag: "ZOEIRA", src: "/surfer.mp4" },
+  { tag: "ZOEIRA", src: "/homem.mp4" },
+  { tag: "ESPECIAL", src: "/mulher.mp4" },
+];
+
 export default function Home() {
   return (
     <div className="min-h-screen" style={{ background: "#08080f", color: "#f0f0f5" }}>
       {/* Header */}
       <header className="flex items-center justify-between px-5 py-4 max-w-2xl mx-auto">
-        <span className="text-xl font-bold tracking-tight text-white">VidZap</span>
+        <span className="text-xl font-bold tracking-tight text-white">Mandaí</span>
         <Link
           href="/criar"
           className="text-sm font-semibold px-4 py-2 rounded-full text-white"
@@ -70,10 +78,7 @@ export default function Home() {
         />
 
         {/* Background thumbnails */}
-        <div
-          className="absolute inset-0 pointer-events-none"
-          style={{ zIndex: 0 }}
-        >
+        <div className="absolute inset-0 pointer-events-none" style={{ zIndex: 0 }}>
           {[
             "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=400",
             "https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=400",
@@ -123,8 +128,7 @@ export default function Home() {
           <p className="text-base mb-10" style={{ color: "#7a7a90", lineHeight: "1.7" }}>
             Você descreve a cena, a IA gera o vídeo com um personagem virtual
             falando o que você quiser. Entrega em até{" "}
-            <span style={{ color: "#d0d0e0" }}>5 minutos</span>.
-            A partir de{" "}
+            <span style={{ color: "#d0d0e0" }}>5 minutos</span>. A partir de{" "}
             <span style={{ color: "#d0d0e0" }}>{formatCents(PRICES.standard)}</span>.
           </p>
 
@@ -139,18 +143,15 @@ export default function Home() {
             Criar meu vídeo agora
           </Link>
 
-          <p className="text-xs mt-4" style={{ color: "#44444f" }}>
-            Sem cadastro · PIX ou cartão · Satisfação garantida
-          </p>
+          {/* ITEM 1 — dynamic video counter */}
+          <StatsCounter />
+
         </div>
       </section>
 
       {/* Examples */}
       <section className="px-5 pb-16 max-w-2xl mx-auto">
-        <p
-          className="text-xs font-semibold tracking-widest mb-6"
-          style={{ color: "#44444f" }}
-        >
+        <p className="text-xs font-semibold tracking-widest mb-6" style={{ color: "#44444f" }}>
           EXEMPLOS REAIS
         </p>
         <div className="flex flex-col gap-3">
@@ -161,9 +162,10 @@ export default function Home() {
               style={{
                 background: "rgba(255,255,255,0.03)",
                 border: "1px solid rgba(255,255,255,0.07)",
-                borderLeft: ex.tag === "ZOEIRA"
-                  ? "3px solid rgba(168,85,247,0.7)"
-                  : "3px solid rgba(255,255,255,0.12)",
+                borderLeft:
+                  ex.tag === "ZOEIRA"
+                    ? "3px solid rgba(168,85,247,0.7)"
+                    : "3px solid rgba(255,255,255,0.12)",
               }}
             >
               <div className="flex items-center gap-3 mb-3">
@@ -186,10 +188,7 @@ export default function Home() {
                   {ex.tag}
                 </span>
               </div>
-              <p
-                className="text-sm leading-relaxed mb-3"
-                style={{ color: "#c8c8d8" }}
-              >
+              <p className="text-sm leading-relaxed mb-3" style={{ color: "#c8c8d8" }}>
                 &ldquo;{ex.text}&rdquo;
               </p>
               <p className="text-xs" style={{ color: "#3a3a4a" }}>
@@ -200,12 +199,59 @@ export default function Home() {
         </div>
       </section>
 
+      {/* video grid */}
+      <section className="px-5 pb-10 max-w-2xl mx-auto">
+        <div className="grid grid-cols-3 gap-3">
+          {EXAMPLE_VIDEOS.map((v, i) => (
+            <div
+              key={i}
+              className="rounded-xl relative overflow-hidden"
+              style={{
+                aspectRatio: "9/16",
+                background: "rgba(255,255,255,0.03)",
+                border: "1px solid rgba(255,255,255,0.07)",
+              }}
+            >
+              <video
+                src={v.src}
+                autoPlay
+                loop
+                muted
+                playsInline
+                className="absolute inset-0 w-full h-full object-cover"
+              />
+              <span
+                className="absolute top-2 left-2 text-xs font-bold tracking-wider px-1.5 py-0.5 rounded"
+                style={
+                  v.tag === "ZOEIRA"
+                    ? { background: "rgba(168,85,247,0.2)", color: "#a855f7" }
+                    : { background: "rgba(16,185,129,0.15)", color: "#10b981" }
+                }
+              >
+                {v.tag}
+              </span>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* ITEM 5 — inline CTA after video grid */}
+      <div className="px-5 pb-16 max-w-2xl mx-auto text-center">
+        <Link
+          href="/criar"
+          className="inline-flex items-center text-sm font-semibold px-6 py-3 rounded-xl text-white transition-all hover:opacity-90"
+          style={{
+            background: "rgba(124,58,237,0.15)",
+            border: "1px solid rgba(124,58,237,0.3)",
+          }}
+        >
+          Quero criar o meu →
+        </Link>
+      </div>
+
       {/* How it works */}
       <section className="px-5 pb-16 max-w-2xl mx-auto">
-        <p
-          className="text-xs font-semibold tracking-widest mb-6"
-          style={{ color: "#44444f" }}
-        >
+        <p className="text-xs font-semibold tracking-widest mb-6" style={{ color: "#44444f" }}>
           COMO FUNCIONA
         </p>
         <div className="grid grid-cols-2 gap-3">
@@ -235,10 +281,7 @@ export default function Home() {
 
       {/* Scene inspiration */}
       <section className="px-5 pb-16 max-w-2xl mx-auto">
-        <p
-          className="text-xs font-semibold tracking-widest mb-2"
-          style={{ color: "#44444f" }}
-        >
+        <p className="text-xs font-semibold tracking-widest mb-2" style={{ color: "#44444f" }}>
           INSPIRAÇÃO DE CENAS
         </p>
         <p className="text-sm mb-6" style={{ color: "#555566" }}>
@@ -262,11 +305,8 @@ export default function Home() {
       </section>
 
       {/* Pricing */}
-      <section className="px-5 pb-16 max-w-2xl mx-auto">
-        <p
-          className="text-xs font-semibold tracking-widest mb-6"
-          style={{ color: "#44444f" }}
-        >
+      <section className="px-5 pb-6 max-w-2xl mx-auto">
+        <p className="text-xs font-semibold tracking-widest mb-6" style={{ color: "#44444f" }}>
           PREÇOS
         </p>
         <div className="grid grid-cols-2 gap-3">
@@ -311,6 +351,62 @@ export default function Home() {
             </p>
           </div>
         </div>
+
+        {/* ITEM 3 — security badges */}
+        <div
+          className="flex items-center justify-center gap-5 mt-5 flex-wrap"
+          style={{ color: "#3a3a4a" }}
+        >
+          <div className="flex items-center gap-1.5">
+            <svg
+              width="12"
+              height="12"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+              <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+            </svg>
+            <span className="text-xs">Pagamento seguro</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <svg width="12" height="12" viewBox="0 0 32 20" fill="none">
+              <rect width="32" height="20" rx="3" fill="rgba(255,255,255,0.08)" />
+              <text x="16" y="13.5" textAnchor="middle" fontSize="7" fontWeight="700" fill="#22c55e" fontFamily="system-ui">
+                PIX
+              </text>
+            </svg>
+            <span className="text-xs">PIX</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <svg
+              width="12"
+              height="12"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <rect x="1" y="4" width="22" height="16" rx="2" ry="2" />
+              <line x1="1" y1="10" x2="23" y2="10" />
+            </svg>
+            <span className="text-xs">Cartão de crédito</span>
+          </div>
+        </div>
+      </section>
+
+      {/* ITEM 6 — FAQ accordion */}
+      <section className="px-5 pt-10 pb-16 max-w-2xl mx-auto">
+        <p className="text-xs font-semibold tracking-widest mb-6" style={{ color: "#44444f" }}>
+          PERGUNTAS FREQUENTES
+        </p>
+        <FaqAccordion />
       </section>
 
       {/* Bottom CTA */}
@@ -319,7 +415,7 @@ export default function Home() {
           Qual vai ser o próximo alvo?
         </h2>
         <p className="text-sm mb-8" style={{ color: "#555566" }}>
-          Mais de 100 vídeos criados · Satisfação garantida
+          Satisfação garantida
         </p>
         <Link
           href="/criar"
@@ -338,7 +434,7 @@ export default function Home() {
         className="px-5 py-6 text-center"
         style={{ borderTop: "1px solid rgba(255,255,255,0.05)", color: "#2e2e38" }}
       >
-        <p className="text-xs">© 2026 VidZap</p>
+        <p className="text-xs">© 2026 Mandaí</p>
         <p className="text-xs mt-1">
           <a href="#" className="hover:text-purple-400 transition-colors">
             Termos de Uso

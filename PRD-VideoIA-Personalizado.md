@@ -32,7 +32,7 @@
 ## 1. Visão Geral do Produto
 
 ### 1.1 Nome do Produto
-**VidZap** *(nome provisório — sujeito a alteração)*
+**Mandaí** *(nome provisório — sujeito a alteração)*
 
 ### 1.2 Tagline
 > "Manda um vídeo pra ele que vai ser épico."

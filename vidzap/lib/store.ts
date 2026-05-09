@@ -26,6 +26,14 @@ export function updateOrder(id: string, patch: Partial<Order>): Order | null {
   return updated;
 }
 
+export function getCompletedOrdersCount(): number {
+  let count = 0;
+  for (const order of orders.values()) {
+    if (order.status === "completed") count++;
+  }
+  return count;
+}
+
 // Simulate async video generation progression
 export function simulateGeneration(orderId: string): void {
   setTimeout(() => {

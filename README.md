@@ -1,4 +1,4 @@
-# VidZap
+# Mandaí
 
 Plataforma web mobile-first para criar vídeos curtos gerados por IA com personagens virtuais, texto personalizado e entrega em até 5 minutos — feita para o WhatsApp brasileiro.
 
@@ -8,7 +8,7 @@ Plataforma web mobile-first para criar vídeos curtos gerados por IA com persona
 
 ## O que é
 
-VidZap permite que qualquer pessoa, sem conhecimento técnico, descreva uma cena em texto livre ("astronauta dentro de um foguete, tom debochado"), defina a fala do personagem, pague via PIX ou cartão e receba o link do vídeo gerado por IA em minutos.
+Mandaí permite que qualquer pessoa, sem conhecimento técnico, descreva uma cena em texto livre ("astronauta dentro de um foguete, tom debochado"), defina a fala do personagem, pague via PIX ou cartão e receba o link do vídeo gerado por IA em minutos.
 
 **Casos de uso principais:** zoeira entre amigos em grupos de WhatsApp, aniversários, apostas perdidas, convites criativos.
 
@@ -38,18 +38,28 @@ GeraVideo/
 └── vidzap/                          # Aplicação Next.js
     ├── app/
     │   ├── page.tsx                 # Landing page
+    │   ├── opengraph-image.tsx      # OG image gerada via ImageResponse
+    │   ├── layout.tsx               # Metadata global + OG/Twitter tags
     │   ├── criar/page.tsx           # Fluxo de criação (3 passos)
     │   ├── pedido/[id]/page.tsx     # Status do pedido + player de vídeo
     │   └── api/
     │       ├── moderate/route.ts    # POST — verificação de conteúdo
     │       ├── orders/route.ts      # POST — criar pedido
-    │       └── orders/[id]/route.ts # GET — status do pedido
+    │       ├── orders/[id]/route.ts # GET — status do pedido
+    │       └── stats/route.ts       # GET — contador de vídeos criados
+    ├── components/
+    │   ├── StatsCounter.tsx         # Contador dinâmico com live dot verde
+    │   └── FaqAccordion.tsx         # FAQ com animação CSS grid (sem lib)
     ├── hooks/
     │   └── useModerationCheck.ts   # Hook de moderação em tempo real
     ├── lib/
     │   ├── data.ts                  # Tipos, chips de sugestão, preços
     │   ├── moderate.ts              # Lógica central da OpenAI Moderation API
     │   └── store.ts                 # Store in-memory + simulação de geração
+    ├── public/
+    │   ├── surfer.mp4               # Vídeo de exemplo (ZOEIRA)
+    │   ├── homem.mp4                # Vídeo de exemplo (ZOEIRA)
+    │   └── mulher.mp4               # Vídeo de exemplo (ESPECIAL)
     └── .env.local.example           # Variáveis de ambiente necessárias
 ```
 
@@ -65,6 +75,7 @@ GeraVideo/
         ↓
 [2] Defina a fala
     Nome do destinatário + fala do personagem (máx. 200 chars)
+    Dica de pronúncia sempre visível (acentos, vírgulas, reticências)
     Chips de sugestão de tom
     Moderação combinada (cena + fala)
         ↓
@@ -75,6 +86,27 @@ GeraVideo/
         ↓
 [5] Assiste o vídeo e envia pelo WhatsApp
 ```
+
+---
+
+## Landing page
+
+### Seções (ordem vertical)
+
+1. **Hero** — headline + CTA + contador dinâmico de vídeos criados (live dot verde)
+2. **Exemplos reais** — 3 cards com badge ZOEIRA/ESPECIAL e borda esquerda colorida
+3. **Grid de vídeos** — 3 vídeos reais em loop (9:16), sem legenda, com badge de categoria
+4. **CTA inline** — "Quero criar o meu →" centralizado
+5. **Como funciona** — 4 cards numerados 01–04
+6. **Inspiração de cenas** — chips clicáveis
+7. **Preços** — PADRÃO / EXPRESS + badges de segurança (cadeado, PIX, cartão)
+8. **FAQ** — 5 perguntas com acordeão CSS (grid-template-rows, sem lib)
+9. **CTA final** — "Qual vai ser o próximo alvo?"
+
+### Componentes client-side
+
+- `StatsCounter` — faz `GET /api/stats` e exibe contagem com dot animado
+- `FaqAccordion` — abre um item por vez, animação via `grid-template-rows: 0fr → 1fr`
 
 ---
 
@@ -146,6 +178,12 @@ Sem variáveis de ambiente, pagamento e geração são simulados. A moderação 
 - [x] Sistema de moderação em 3 camadas com 4 estados visuais
 - [x] Pagamento e geração simulados localmente
 - [x] Página de status com polling e player de vídeo
+- [x] Contador dinâmico de vídeos criados com live dot
+- [x] Grid de vídeos reais em loop (surfer, homem, mulher)
+- [x] FAQ accordion com animação CSS pura
+- [x] OG/Twitter meta tags + imagem gerada via ImageResponse
+- [x] Badges de segurança (pagamento seguro, PIX, cartão)
+- [x] Dica de pronúncia no Passo 2 do formulário
 
 **v2 — Integrações reais**
 - [ ] Mercado Pago — PIX e cartão
@@ -203,3 +241,5 @@ CREATE TABLE orders (
 - **Moderação cirúrgica**: filtro bloqueia apenas o que viola lei ou causa dano real. Palavrões, gírias e deboche são explicitamente permitidos para não frustrar o usuário-alvo.
 - **Mobile-first**: fluxo completo concluível em menos de 3 minutos no celular, sem cadastro.
 - **Profundidade visual sem peso**: landing page usa grain CSS (SVG, zero KB), thumbnails com `opacity: 0.08` no hero e borda esquerda colorida nos cards de exemplo — profundidade sem imagens pesadas.
+- **Dica de pronúncia contextual**: a IA lê o texto literalmente para definir pronúncia. A dica é exibida fixamente no Passo 2 (campo de fala), sem hover e sem interação, para guiar o usuário no momento exato em que está escrevendo.
+- **Vídeos reais na landing**: grid 3 colunas com aspect-ratio 9:16, `autoPlay loop muted playsInline` — demonstração imediata do produto sem exigir clique.

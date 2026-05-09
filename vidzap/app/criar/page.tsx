@@ -241,7 +241,7 @@ export default function CriarPage() {
           ←
         </Link>
         <div className="flex items-center gap-2">
-          <span className="text-lg font-bold text-white">VidZap</span>
+          <span className="text-lg font-bold text-white">Mandaí</span>
         </div>
       </header>
 
@@ -434,36 +434,6 @@ export default function CriarPage() {
               </p>
             </div>
 
-            <div className="mb-4">
-              <p className="text-xs font-semibold mb-2" style={{ color: "#888899" }}>
-                SUGESTÃO DE TOM (clique para usar)
-              </p>
-              <div className="flex flex-wrap gap-2">
-                {TONE_CHIPS.map((chip) => (
-                  <button
-                    key={chip}
-                    onClick={() => {
-                      const template = TONE_TEMPLATES[chip];
-                      if (template) {
-                        setForm((f) => ({
-                          ...f,
-                          videoText: template(f.recipientName).slice(0, MAX_TEXT),
-                        }));
-                      }
-                    }}
-                    className="px-3 py-1.5 rounded-full text-xs font-medium transition-all"
-                    style={{
-                      background: "rgba(236,72,153,0.1)",
-                      border: "1px solid rgba(236,72,153,0.2)",
-                      color: "#f472b6",
-                    }}
-                  >
-                    {chip}
-                  </button>
-                ))}
-              </div>
-            </div>
-
             <div className="mb-5">
               <label className="block text-sm font-semibold mb-2 text-white">
                 Fala do personagem
@@ -501,7 +471,56 @@ export default function CriarPage() {
                       : "1px solid rgba(255,255,255,0.12)";
                 }}
               />
-              <div className="flex justify-between items-center mt-1">
+
+              {/* Pronunciation tip */}
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "flex-start",
+                  gap: 8,
+                  marginTop: 8,
+                  padding: "10px 12px",
+                  borderRadius: 8,
+                  background: "rgba(255,255,255,0.03)",
+                  border: "0.5px solid rgba(255,255,255,0.09)",
+                }}
+              >
+                <svg
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  style={{ flexShrink: 0, marginTop: 1, color: "#666680" }}
+                >
+                  <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" />
+                  <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
+                  <line x1="12" y1="19" x2="12" y2="23" />
+                  <line x1="8" y1="23" x2="16" y2="23" />
+                </svg>
+                <div>
+                  <p style={{ fontSize: 12, fontWeight: 500, color: "#888899", marginBottom: 4 }}>
+                    Escreva como você quer que o personagem pronuncie
+                  </p>
+                  <p style={{ fontSize: 12, color: "#666680", lineHeight: 1.5, margin: 0 }}>
+                    A IA lê o texto à risca.{" "}
+                    <span style={{ color: "#888899" }}>&ldquo;Erique&rdquo; soa diferente de &ldquo;Érique&rdquo;</span>
+                    {" "}— use acentos, vírgulas e reticências para controlar o ritmo e a pronúncia da fala.
+                  </p>
+                  <p style={{ fontSize: 11, color: "#666680", marginTop: 6, lineHeight: 1.5 }}>
+                    Outros exemplos:{" "}
+                    <span style={{ color: "#888899" }}>&ldquo;João...&rdquo;</span>
+                    {" "}faz pausa,{" "}
+                    <span style={{ color: "#888899" }}>&ldquo;NÃO acredito&rdquo;</span>
+                    {" "}enfatiza a palavra em maiúsculo.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex justify-between items-center mt-2">
                 {form.videoText.length >= WARN_TEXT ? (
                   <p className="text-xs" style={{ color: "#f97316" }}>
                     ⚠️ Quase no limite — falas longas podem ser cortadas
@@ -525,6 +544,36 @@ export default function CriarPage() {
                 status={moderationStatus}
                 categories={moderationCategories}
               />
+            </div>
+
+            <div className="mb-4">
+              <p className="text-xs font-semibold mb-2" style={{ color: "#888899" }}>
+                SUGESTÃO DE TOM (clique para usar)
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {TONE_CHIPS.map((chip) => (
+                  <button
+                    key={chip}
+                    onClick={() => {
+                      const template = TONE_TEMPLATES[chip];
+                      if (template) {
+                        setForm((f) => ({
+                          ...f,
+                          videoText: template(f.recipientName).slice(0, MAX_TEXT),
+                        }));
+                      }
+                    }}
+                    className="px-3 py-1.5 rounded-full text-xs font-medium transition-all"
+                    style={{
+                      background: "rgba(236,72,153,0.1)",
+                      border: "1px solid rgba(236,72,153,0.2)",
+                      color: "#f472b6",
+                    }}
+                  >
+                    {chip}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
         )}
