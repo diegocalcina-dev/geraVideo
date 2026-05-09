@@ -4,6 +4,10 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { SCENE_CHIPS, TONE_CHIPS, PRICES, formatCents } from "@/lib/data";
+import {
+  useModerationCheck,
+  type ModerationStatus,
+} from "@/hooks/useModerationCheck";
 
 type Step = 1 | 2 | 3;
 
@@ -35,6 +39,133 @@ const TONE_TEMPLATES: Record<string, (name: string) => string> = {
     `${n || "Você"}, essa foi boa demais! Não esqueci não, viu?!`,
 };
 
+const BLOCK_MESSAGES: Record<string, string> = {
+  "menores de idade":
+    "Conteúdo envolvendo menores de idade não é permitido na plataforma, independente do contexto.",
+  "conteúdo ilegal":
+    "Conteúdo que promove ou simula atividades ilegais não pode ser gerado.",
+  "violência ilícita": "Conteúdo com violência explícita não é permitido.",
+  assédio: "Conteúdo com assédio ou ameaças diretas não é permitido.",
+  ameaças: "Conteúdo com ameaças diretas não é permitido.",
+  "discurso de ódio": "Conteúdo com discurso de ódio não é permitido.",
+  "conteúdo não permitido":
+    "Este conteúdo viola as diretrizes da plataforma. Edite a cena ou a fala para continuar.",
+  default:
+    "Este conteúdo viola as diretrizes da plataforma. Edite a cena para continuar.",
+};
+
+function ModerationIndicator({
+  status,
+  categories,
+}: {
+  status: ModerationStatus;
+  categories: string[];
+}) {
+  if (status === "idle") return null;
+
+  if (status === "ok") {
+    return (
+      <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 8 }}>
+        <span
+          style={{
+            width: 6,
+            height: 6,
+            borderRadius: "50%",
+            background: "#1D9E75",
+            display: "inline-block",
+            flexShrink: 0,
+          }}
+        />
+        <span style={{ fontSize: 12, color: "#1D9E75" }}>Conteúdo verificado</span>
+      </div>
+    );
+  }
+
+  if (status === "checking") {
+    return (
+      <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 8 }}>
+        <span
+          style={{
+            width: 6,
+            height: 6,
+            borderRadius: "50%",
+            background: "#378ADD",
+            display: "inline-block",
+            flexShrink: 0,
+            animation: "pulse 1s infinite",
+          }}
+        />
+        <span style={{ fontSize: 12, color: "#378ADD" }}>Analisando o conteúdo...</span>
+      </div>
+    );
+  }
+
+  if (status === "warn") {
+    return (
+      <div
+        style={{
+          marginTop: 8,
+          padding: "10px 12px",
+          borderRadius: 8,
+          borderLeft: "2px solid #BA7517",
+          background: "rgba(250,238,218,0.08)",
+        }}
+      >
+        <p style={{ fontSize: 12, fontWeight: 500, color: "#BA7517", marginBottom: 4 }}>
+          Conteúdo pode ser limitado
+        </p>
+        <p style={{ fontSize: 12, color: "#9A6010", lineHeight: 1.5, margin: 0 }}>
+          Palavrões e linguagem ofensiva podem ser suavizados pelo modelo de IA.
+          Você pode prosseguir, mas o resultado pode diferir do texto exato.
+        </p>
+      </div>
+    );
+  }
+
+  if (status === "blocked") {
+    const label = categories[0] ?? "default";
+    const message = BLOCK_MESSAGES[label] ?? BLOCK_MESSAGES.default;
+    return (
+      <div
+        style={{
+          marginTop: 8,
+          padding: "10px 12px",
+          borderRadius: 8,
+          borderLeft: "2px solid #A32D2D",
+          background: "rgba(252,235,235,0.06)",
+        }}
+      >
+        <p style={{ fontSize: 12, fontWeight: 500, color: "#A32D2D", marginBottom: 4 }}>
+          Esse tipo de conteúdo não pode ser gerado
+        </p>
+        <p style={{ fontSize: 12, color: "#A32D2D", lineHeight: 1.5, margin: 0 }}>
+          {message}
+        </p>
+        {categories.length > 0 && (
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginTop: 8 }}>
+            {categories.map((c) => (
+              <span
+                key={c}
+                style={{
+                  fontSize: 11,
+                  padding: "2px 8px",
+                  borderRadius: 999,
+                  border: "0.5px solid #A32D2D",
+                  color: "#A32D2D",
+                }}
+              >
+                {c}
+              </span>
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  return null;
+}
+
 export default function CriarPage() {
   const router = useRouter();
   const [step, setStep] = useState<Step>(1);
@@ -50,7 +181,14 @@ export default function CriarPage() {
     paymentMethod: "pix",
   });
 
+  const { status: moderationStatus, categories: moderationCategories } =
+    useModerationCheck(form.sceneDescription, form.videoText);
+
+  const moderationBlocks =
+    moderationStatus === "blocked" || moderationStatus === "checking";
+
   const canGoNext = (): boolean => {
+    if (moderationBlocks) return false;
     if (step === 1) return form.sceneDescription.trim().length >= MIN_CHARS;
     if (step === 2)
       return (
@@ -80,7 +218,7 @@ export default function CriarPage() {
       });
       if (!res.ok) {
         const data = await res.json();
-        throw new Error(data.error ?? "Erro ao criar pedido.");
+        throw new Error(data.message ?? data.error ?? "Erro ao criar pedido.");
       }
       const { orderId } = await res.json();
       router.push(`/pedido/${orderId}`);
@@ -92,6 +230,9 @@ export default function CriarPage() {
 
   const price = form.isExpress ? PRICES.express : PRICES.standard;
 
+  const nextLabel =
+    moderationStatus === "warn" ? "Entendi, prosseguir →" : "Continuar →";
+
   return (
     <div className="min-h-screen flex flex-col" style={{ background: "#08080f", color: "#f0f0f5" }}>
       {/* Header */}
@@ -100,7 +241,6 @@ export default function CriarPage() {
           ←
         </Link>
         <div className="flex items-center gap-2">
-          <span className="text-xl">⚡</span>
           <span className="text-lg font-bold text-white">VidZap</span>
         </div>
       </header>
@@ -183,6 +323,10 @@ export default function CriarPage() {
                   {form.sceneDescription.length}/{MAX_SCENE}
                 </p>
               </div>
+              <ModerationIndicator
+                status={moderationStatus}
+                categories={moderationCategories}
+              />
             </div>
 
             <p className="text-xs font-semibold mb-3" style={{ color: "#888899" }}>
@@ -377,6 +521,10 @@ export default function CriarPage() {
                   {form.videoText.length}/{MAX_TEXT}
                 </p>
               </div>
+              <ModerationIndicator
+                status={moderationStatus}
+                categories={moderationCategories}
+              />
             </div>
           </div>
         )}
@@ -630,7 +778,7 @@ export default function CriarPage() {
                   : "none",
               }}
             >
-              Continuar →
+              {nextLabel}
             </button>
           ) : (
             <button

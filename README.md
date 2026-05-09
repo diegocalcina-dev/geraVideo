@@ -2,6 +2,8 @@
 
 Plataforma web mobile-first para criar vídeos curtos gerados por IA com personagens virtuais, texto personalizado e entrega em até 5 minutos — feita para o WhatsApp brasileiro.
 
+> "O vídeo que vai destruir o grupo do WhatsApp."
+
 ---
 
 ## O que é
@@ -18,6 +20,7 @@ VidZap permite que qualquer pessoa, sem conhecimento técnico, descreva uma cena
 |---|---|
 | Frontend | Next.js 16 (App Router) + TypeScript + Tailwind v4 |
 | Hospedagem | Vercel |
+| Moderação de conteúdo | OpenAI Moderation API (`omni-moderation-latest`) |
 | Banco de dados | Supabase (PostgreSQL) — v2 |
 | Fila de jobs | BullMQ + Redis — v2 |
 | Storage | Cloudflare R2 — v2 |
@@ -31,19 +34,23 @@ VidZap permite que qualquer pessoa, sem conhecimento técnico, descreva uma cena
 
 ```
 GeraVideo/
-├── PRD-VideoIA-Personalizado.md   # Product Requirements Document completo
-└── vidzap/                        # Aplicação Next.js
+├── PRD-VideoIA-Personalizado.md     # Product Requirements Document completo
+└── vidzap/                          # Aplicação Next.js
     ├── app/
-    │   ├── page.tsx               # Landing page
-    │   ├── criar/page.tsx         # Fluxo de criação (3 passos)
-    │   ├── pedido/[id]/page.tsx   # Status do pedido + player de vídeo
+    │   ├── page.tsx                 # Landing page
+    │   ├── criar/page.tsx           # Fluxo de criação (3 passos)
+    │   ├── pedido/[id]/page.tsx     # Status do pedido + player de vídeo
     │   └── api/
-    │       ├── orders/route.ts    # POST — criar pedido
-    │       └── orders/[id]/route.ts  # GET — status do pedido
+    │       ├── moderate/route.ts    # POST — verificação de conteúdo
+    │       ├── orders/route.ts      # POST — criar pedido
+    │       └── orders/[id]/route.ts # GET — status do pedido
+    ├── hooks/
+    │   └── useModerationCheck.ts   # Hook de moderação em tempo real
     ├── lib/
-    │   ├── data.ts                # Tipos, chips de sugestão, preços
-    │   └── store.ts               # Store in-memory + simulação de geração
-    └── ...
+    │   ├── data.ts                  # Tipos, chips de sugestão, preços
+    │   ├── moderate.ts              # Lógica central da OpenAI Moderation API
+    │   └── store.ts                 # Store in-memory + simulação de geração
+    └── .env.local.example           # Variáveis de ambiente necessárias
 ```
 
 ---
@@ -54,10 +61,12 @@ GeraVideo/
 [1] Descreva a cena
     Campo de texto livre (máx. 300 chars) + chips de sugestão
     Seleção de formato: 9:16 (Stories) ou 16:9 (Horizontal)
+    Moderação em tempo real enquanto digita
         ↓
 [2] Defina a fala
     Nome do destinatário + fala do personagem (máx. 200 chars)
     Chips de sugestão de tom
+    Moderação combinada (cena + fala)
         ↓
 [3] Revisão e pagamento
     Resumo do pedido + opção Express + PIX ou Cartão
@@ -69,17 +78,54 @@ GeraVideo/
 
 ---
 
+## Sistema de moderação de conteúdo
+
+3 camadas independentes que se somam:
+
+**Camada 1 — Filtro local (instantâneo, sem custo)**
+Regex rodando no cliente enquanto o usuário digita. Bloqueia menores + contexto sexual, estupro, terrorismo. Resultado em < 10ms.
+
+**Camada 2 — OpenAI Moderation API (debounce 800ms)**
+Hook `useModerationCheck` chama `POST /api/moderate`. Detecta categorias como `sexual/minors`, `illicit`, `harassment`, `hate`. Falha silenciosa — nunca bloqueia o usuário se a API estiver fora.
+
+**Camada 3 — Bloqueio duplo no backend**
+`POST /api/orders` re-executa moderação antes de criar o pedido. Retorna HTTP 422 se `hardBlock = true`, impedindo bypass via chamada direta à API.
+
+**4 estados visuais:**
+- Verde — "Conteúdo verificado"
+- Azul pulsando — "Analisando..." (botão desabilitado)
+- Amarelo — aviso não bloqueante, botão vira "Entendi, prosseguir →"
+- Vermelho — bloqueio total com categoria exibida
+
+**Regra:** palavrões, gírias, deboche e zoeira entre adultos são **permitidos** — o filtro é cirúrgico.
+
+---
+
 ## Rodar localmente
 
 ```bash
 cd vidzap
 npm install
+cp .env.local.example .env.local
 npm run dev
 ```
 
 Acesse [http://localhost:3000](http://localhost:3000).
 
-Nenhuma variável de ambiente necessária na v1 — pagamento e geração de vídeo são simulados automaticamente.
+Sem variáveis de ambiente, pagamento e geração são simulados. A moderação via OpenAI é pulada silenciosamente (filtro local continua ativo). Para ativar a moderação completa, adicione `OPENAI_API_KEY` no `.env.local`.
+
+---
+
+## Variáveis de ambiente
+
+| Variável | Obrigatória | Descrição |
+|---|---|---|
+| `OPENAI_API_KEY` | Não (v1) | Moderação de conteúdo via OpenAI — gratuita |
+| `MERCADO_PAGO_ACCESS_TOKEN` | v2 | Pagamentos PIX + Cartão |
+| `ANTHROPIC_API_KEY` | v2 | Geração de prompt cinematográfico |
+| `KLING_API_KEY` | v2 | Geração de vídeo |
+| `CLOUDFLARE_R2_*` | v2 | Storage dos vídeos |
+| `SUPABASE_URL` + `SUPABASE_ANON_KEY` | v2 | Banco de dados |
 
 ---
 
@@ -95,8 +141,9 @@ Nenhuma variável de ambiente necessária na v1 — pagamento e geração de ví
 ## Roadmap
 
 **v1 — MVP local (atual)**
-- [x] Landing page com tom adulto e debochado
+- [x] Landing page com tom adulto e debochado (dark, sem emojis decorativos)
 - [x] Fluxo de 3 passos em texto livre (sem seleção de cards)
+- [x] Sistema de moderação em 3 camadas com 4 estados visuais
 - [x] Pagamento e geração simulados localmente
 - [x] Página de status com polling e player de vídeo
 
@@ -129,7 +176,7 @@ CREATE TABLE orders (
   video_text        VARCHAR(200) NOT NULL,
   is_express        BOOLEAN DEFAULT FALSE,
 
-  generated_prompt  TEXT,                 -- prompt cinematográfico em inglês gerado pela Claude API
+  generated_prompt  TEXT,                 -- prompt cinematográfico em inglês (Claude API)
 
   payment_method    VARCHAR(20),
   payment_id        VARCHAR(100),
@@ -151,6 +198,8 @@ CREATE TABLE orders (
 
 ## Decisões de design
 
-- **Texto livre em vez de cards**: o modelo antigo limitava o usuário a 6 modelos e 6 cenários fixos. A nova abordagem deixa a criatividade livre — a Claude API transforma a descrição em prompt cinematográfico em inglês otimizado para o Kling AI.
-- **Tom adulto e direto**: o produto é para zoeira entre adultos em grupos de WhatsApp, não para cartões de aniversário. A interface reflete isso — sem emojis decorativos, linguagem direta.
+- **Texto livre em vez de cards**: o modelo antigo limitava a 6 modelos e 6 cenários fixos. A nova abordagem deixa a criatividade livre — a Claude API transforma a descrição em prompt cinematográfico em inglês otimizado para o Kling AI.
+- **Tom adulto e direto**: o produto é para zoeira entre adultos em grupos de WhatsApp. A interface não tem emojis decorativos, usa tipografia limpa e linguagem direta.
+- **Moderação cirúrgica**: filtro bloqueia apenas o que viola lei ou causa dano real. Palavrões, gírias e deboche são explicitamente permitidos para não frustrar o usuário-alvo.
 - **Mobile-first**: fluxo completo concluível em menos de 3 minutos no celular, sem cadastro.
+- **Profundidade visual sem peso**: landing page usa grain CSS (SVG, zero KB), thumbnails com `opacity: 0.08` no hero e borda esquerda colorida nos cards de exemplo — profundidade sem imagens pesadas.

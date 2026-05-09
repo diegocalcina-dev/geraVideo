@@ -562,7 +562,37 @@ O usuário deve aceitar os termos que incluem:
 - A plataforma não se responsabiliza pelo uso indevido do vídeo gerado
 
 ### 14.3 Moderação de Conteúdo
-- Filtro de palavras proibidas no campo de texto
+
+Sistema de 3 camadas implementado no MVP v1:
+
+**Camada 1 — Filtro local (frontend, instantâneo, sem custo)**
+- Função `checkLocalRules()` executada sincronamente enquanto o usuário digita
+- Bloqueia padrões de conteúdo ilegal via regex (menores + contexto sexual, estupro, terrorismo)
+- Detecta variações básicas de leet speak (ex: `cri4nça`, `menor1`)
+- Resultado imediato, sem latência, sem chamada de API
+
+**Camada 2 — OpenAI Moderation API (backend, debounce 800ms, gratuita)**
+- Hook `useModerationCheck(scene, speech)` com debounce de 800ms no frontend
+- Endpoint `POST /api/moderate` chama `openai.moderations.create` com modelo `omni-moderation-latest`
+- Categorias de bloqueio total (`hardBlock`): `sexual/minors`, `illicit`, `illicit/violent`
+- Categorias de aviso (`softWarn`): `harassment`, `harassment/threatening`, `hate`
+- Em caso de falha da API, nunca bloqueia o usuário (degradação segura)
+
+**Camada 3 — Bloqueio duplo no backend (antes do pagamento)**
+- `POST /api/orders` chama `runModeration()` antes de criar qualquer pedido
+- Retorna HTTP 422 com `CONTENT_POLICY_VIOLATION` se `hardBlock = true`
+- Impede bypass via chamada direta à API sem passar pelo frontend
+
+**4 estados visuais no formulário**
+- `idle` / `ok` — ponto verde discreto: "Conteúdo verificado"
+- `checking` — ponto azul pulsando: "Analisando o conteúdo..." / botão bloqueado
+- `warn` — faixa amarela não bloqueante: avisa que a IA pode suavizar o texto / botão muda para "Entendi, prosseguir →"
+- `blocked` — faixa vermelha: mensagem específica por categoria + tags / botão bloqueado até edição
+
+**Regra de ouro — o que NÃO é moderado**
+Palavrões comuns, gírias, tom de deboche, ironia, referências a bebida/churrasco/apostas e zoeiras entre adultos consentidos são permitidos — faz parte do produto.
+
+**Outros controles**
 - Rate limiting: máximo de 5 pedidos por IP por hora
 - Revisão manual acionada por reportes
 
@@ -636,7 +666,8 @@ O usuário deve aceitar os termos que incluem:
 | R01 | API do Kling AI sair do ar ou mudar preços | Média | Alto | Integrar segunda opção (Runway ML) como fallback |
 | R02 | Qualidade dos vídeos abaixo da expectativa | Alta | Alto | Curadoria manual dos prompts, modelos pré-testadas |
 | R03 | Chargeback / fraude nos pagamentos | Baixa | Médio | Rate limiting, verificação de IP, política anti-fraude do MP |
-| R04 | Usuário inserir conteúdo ofensivo/ilegal | Média | Alto | Filtro de texto + termos de uso + moderação manual |
+| R04 | Usuário inserir conteúdo ofensivo/ilegal | Média | Alto | Sistema de moderação em 3 camadas (local + OpenAI API + backend) implementado no MVP |
+| R09 | Falsos positivos na moderação frustram usuários e reduzem conversão | Baixa | Médio | Filtro cirúrgico: bloqueia apenas o que viola lei; palavrões e zoeira entre adultos são permitidos |
 | R05 | Uso indevido de imagem de terceiros | Média | Alto | Termo de uso explícito + flag para imagens de pessoas reais |
 | R06 | Concorrente copiar o modelo em semanas | Alta | Médio | Velocidade de execução + base de clientes fidelizada |
 | R07 | Custo de geração superar preço cobrado | Baixa | Alto | Monitoramento de custo por pedido em tempo real |
@@ -654,6 +685,15 @@ O usuário deve aceitar os termos que incluem:
 - [ ] Campo de fala exibe aviso visual ao atingir 180 caracteres
 - [ ] Botão "continuar" permanece bloqueado até cena (mín. 5 chars) e fala (mín. 5 chars) preenchidos
 - [ ] Tela de revisão exibe corretamente cena, destinatário, fala e formato antes do pagamento
+
+### Moderação de Conteúdo (F01 — Segurança)
+- [ ] Conteúdo com padrão de menor + contexto sexual é bloqueado imediatamente (< 10ms, sem API)
+- [ ] Indicador visual aparece durante análise da API (estado `checking`, botão desabilitado)
+- [ ] Conteúdo limpo exibe ponto verde "Conteúdo verificado" após análise
+- [ ] Conteúdo com `softWarn` exibe faixa amarela e muda label do botão para "Entendi, prosseguir →"
+- [ ] Conteúdo com `hardBlock` exibe faixa vermelha com categoria e bloqueia o botão
+- [ ] `POST /api/orders` retorna 422 se conteúdo viola política (proteção contra bypass de frontend)
+- [ ] Falha da OpenAI Moderation API nunca bloqueia o usuário (degradação segura)
 
 ### F03 — Pagamento
 - [ ] QR Code PIX é gerado em menos de 3 segundos

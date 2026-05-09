@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createOrder, simulateGeneration } from "@/lib/store";
 import { PRICES } from "@/lib/data";
+import { runModeration } from "@/lib/moderate";
 
 export async function POST(req: NextRequest) {
   try {
@@ -9,6 +10,18 @@ export async function POST(req: NextRequest) {
 
     if (!recipientName || !videoText || !sceneDescription) {
       return NextResponse.json({ error: "Campos obrigatórios ausentes." }, { status: 400 });
+    }
+
+    // Layer 3 — server-side moderation before payment
+    const modResult = await runModeration(sceneDescription, videoText);
+    if (modResult.hardBlock) {
+      return NextResponse.json(
+        {
+          error: "CONTENT_POLICY_VIOLATION",
+          message: "Conteúdo não permitido pela política da plataforma.",
+        },
+        { status: 422 }
+      );
     }
 
     const amountCents = isExpress ? PRICES.express : PRICES.standard;
